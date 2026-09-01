@@ -1,0 +1,169 @@
+AMFU-Net Final Year Project - Session Summary Notes
+
+Project topic:
+AMFU-Net: A Multi-Scale Attention Network for Lesion Segmentation in Fused Breast Ultrasound Imaging
+
+Main idea:
+The original AMFU-Net paper uses fused breast ultrasound images for lesion segmentation. The authors first fuse two ultrasound image types, reflection and transmission images, then pass the fused image into AMFU-Net for segmentation.
+
+Our project adapts this work because the original dataset is private and cannot be accessed. Public breast ultrasound datasets do not contain paired reflection and transmission images, so we cannot reproduce the fusion stage exactly. Instead, we replace that unavailable fusion stage with a single-image preprocessing pipeline using speckle despeckling and CLAHE contrast enhancement.
+
+
+Session 1 - Understanding the Research Paper
+
+In the first session, we studied the AMFU-Net paper and broke down how the original method works.
+
+Key findings:
+- The paper has two main stages: image fusion and lesion segmentation.
+- The fusion stage combines reflection and transmission ultrasound images.
+- The segmentation stage uses AMFU-Net, a U-Net-like architecture improved with DAG attention gates and an MFEF multi-scale feature module.
+- The original dataset contains 215 fused ultrasound images from 210 patients.
+- The authors report a Dice score of 91.42%.
+- The dataset is private and the authors state that they do not have permission to share it.
+
+Important conclusion:
+The segmentation architecture can be studied and adapted, but the original fusion stage cannot be reproduced directly without the private paired USCT dataset.
+
+
+Session 2 - Why We Pivoted from Fusion to Single-Image Enhancement
+
+In the second session, we investigated whether the original dataset or an equivalent public dataset could be found.
+
+Key findings:
+- Public datasets such as BUSI, BUS-UCLM, BUS-BRA, BrEaST, and UDIAT use normal handheld ultrasound.
+- These datasets contain only one ultrasound image per case, usually a grayscale reflection/B-mode image.
+- They do not contain paired reflection and transmission images.
+- Because of this, they cannot support the original AMFU-Net fusion step.
+
+Decision made:
+We replaced the unavailable fusion step with a defensible preprocessing stage for single ultrasound images.
+
+Replacement pipeline:
+Raw ultrasound image -> speckle despeckling -> CLAHE enhancement -> AMFU-Net segmentation
+
+Why this is reasonable:
+- Ultrasound images commonly suffer from speckle noise and low contrast.
+- Speckle reduction helps clean the image.
+- CLAHE improves local contrast and makes lesion boundaries easier to see.
+- This approach is supported by earlier breast ultrasound segmentation work.
+
+
+Session 4 - Ultrasound Image Enhancement Pipeline
+
+In this session, we focused more deeply on the enhancement strategy.
+
+Key findings:
+- Ultrasound speckle is not ordinary random noise. It is a multiplicative interference pattern caused by how sound waves scatter through tissue.
+- Simple blur can reduce speckle, but it can also destroy lesion boundaries.
+- Despeckling should happen before contrast enhancement.
+- If CLAHE is applied before despeckling, it may amplify speckle noise.
+- If despeckling is applied first, CLAHE can then enhance the cleaner image.
+
+Main pipeline direction:
+Raw image -> despeckling -> CLAHE -> enhanced image
+
+Enhancement methods discussed:
+- SRAD: Speckle Reducing Anisotropic Diffusion.
+- Lee filter: an adaptive local statistics filter.
+- CNN-based despeckling: a possible future alternative.
+- CLAHE: Contrast Limited Adaptive Histogram Equalization.
+
+Important conclusion:
+For the current implementation, SRAD plus CLAHE is the main preprocessing approach because it is practical, explainable, and well suited for ultrasound image enhancement.
+
+
+Session 5 - Current Preprocessing Implementation
+
+In Session 5, we moved from theory into a working preprocessing notebook.
+
+Main file:
+preprocessing-pipeline.ipynb
+
+Datasets used:
+- BUSI
+- BUS-UCLM
+- BUS-BRA
+
+What the notebook does:
+- Downloads or loads the datasets from public sources.
+- Converts all images to grayscale.
+- Finds and pairs each ultrasound image with its correct lesion mask.
+- Rejects invalid, missing, ambiguous, or mismatched image-mask pairs.
+- Standardizes all datasets into one common table format.
+- Checks that image and mask dimensions match.
+- Removes masks that do not contain lesion pixels.
+- Hashes images to detect exact duplicate images.
+- Uses patient IDs or derived groups to reduce data leakage.
+- Splits the data into train, validation, and internal test sets.
+- Applies robust scaling, SRAD despeckling, and CLAHE enhancement.
+- Saves raw images, SRAD images, enhanced images, and unchanged masks.
+- Saves a preprocessing manifest and configuration file.
+- Uploads the processed dataset to Hugging Face.
+
+Important preprocessing order:
+1. Robust intensity scaling
+2. SRAD despeckling
+3. CLAHE contrast enhancement
+
+Why masks are not enhanced:
+The mask is the ground truth label. It should remain unchanged because it tells the model the correct lesion location.
+
+Important conclusion:
+The preprocessing pipeline creates a clean, traceable, training-ready dataset for AMFU-Net.
+
+
+Session 5 - Current Training Implementation
+
+Main file:
+training-pipe.ipynb
+
+What the training notebook does:
+- Loads the preprocessed dataset from Hugging Face.
+- Creates PyTorch segmentation datasets.
+- Resizes images and masks to 256 x 256.
+- Applies training-only augmentation such as flipping, rotation, translation, and scaling.
+- Defines the AMFU-Net architecture.
+- Implements DAG attention gates.
+- Implements the MFEF multi-scale feature extraction module.
+- Uses BCE plus Dice loss.
+- Tracks segmentation metrics such as Dice, Jaccard/IoU, HD95, and ASD.
+- Supports checkpoint resume from Hugging Face.
+- Saves model weights, training curves, predictions, and test results.
+- Pushes the trained model to Hugging Face.
+
+Important conclusion:
+The team has moved beyond preprocessing and has implemented the AMFU-Net training pipeline on the adapted public dataset.
+
+
+Session 5 - Demo Application
+
+The demo material explains how the trained model can be used in an application.
+
+Main idea:
+A user uploads a breast ultrasound image, the app applies the same preprocessing used during training, then the model predicts a lesion mask.
+
+Demo components:
+- preprocessing.py: repeats grayscale conversion, robust scaling, SRAD, CLAHE, resizing, and normalization.
+- modeling_amfu.py: defines the same AMFU-Net architecture used during training.
+- app.py: loads the trained model, runs prediction, creates the mask, and displays the overlay.
+
+Important conclusion:
+The demo is meant to show the end-to-end practical flow from ultrasound image to predicted lesion region.
+
+
+Overall Project Progress
+
+What has been completed:
+- The original AMFU-Net paper has been understood.
+- The dataset limitation has been identified and justified.
+- A practical replacement for the fusion stage has been selected.
+- Public datasets have been chosen.
+- A preprocessing notebook has been implemented.
+- A training notebook has been implemented.
+- Session 5 explanation slides already exist for preprocessing, training, and demo.
+
+Current project direction:
+We are not claiming to fully reproduce the original AMFU-Net paper, because the original fused USCT dataset is unavailable. Instead, we are adapting the AMFU-Net segmentation architecture to public single-modality breast ultrasound datasets, using SRAD and CLAHE preprocessing as the replacement for the unavailable fusion stage.
+
+Simple one-line summary:
+Because the original fused ultrasound dataset is private, our project adapts AMFU-Net by replacing fusion with SRAD + CLAHE preprocessing on public breast ultrasound images, then trains the AMFU-Net segmentation model on the enhanced images and their lesion masks.
