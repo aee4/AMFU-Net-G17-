@@ -1,0 +1,6 @@
+files/
+desktop.ini
+.tmp_pypdf/
+.codex_tmp_pypdf/
+__pycache__/
+.ipynb_checkpoints/
