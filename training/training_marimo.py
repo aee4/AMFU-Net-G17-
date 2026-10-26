@@ -91,11 +91,15 @@ def _(dataclass, mo):
     @dataclass
     class Config:
         # Architecture toggles
-        use_dag: bool = False
-        use_mfef: bool = True
+        use_dag: bool = True
+        use_mfef: bool = False
         image_modality: str = "raw"  # "srad_only", "clahe_only", "enhanced", "raw"
         use_raw_image: bool = False
-        run_name: str = "unet_mfef"
+        run_name: str = "unet_dag_focaltversky"
+        loss_type: str = "focal_tversky"
+        tversky_alpha: float = 0.3
+        tversky_beta: float = 0.7
+        tversky_gamma: float = 1.33
 
         # Repositories and paths
         data_repo: str = "Ahorts/G17-preprocessed-dataset"
@@ -367,6 +371,10 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             image_size=256,
             use_dag=True,
             use_mfef=True,
+            loss_type="focal_tversky",
+            tversky_alpha=0.3,
+            tversky_beta=0.7,
+            tversky_gamma=1.33,
             **kwargs,
         ):
             super().__init__(**kwargs)
@@ -374,6 +382,10 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             self.image_size = image_size
             self.use_dag = use_dag
             self.use_mfef = use_mfef
+            self.loss_type = loss_type
+            self.tversky_alpha = tversky_alpha
+            self.tversky_beta = tversky_beta
+            self.tversky_gamma = tversky_gamma
 
 
     class AMFUNet(PreTrainedModel):
@@ -444,12 +456,26 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             if labels is not None:
                 probabilities = torch.sigmoid(logits)
                 dims = (1, 2, 3)
-                intersection = (probabilities * labels).sum(dims)
-                dice = (2 * intersection + 1.0) / (
-                    probabilities.sum(dims) + labels.sum(dims) + 1.0
-                )
+                loss_type = getattr(self.config, "loss_type", "focal_tversky")
                 bce = F.binary_cross_entropy_with_logits(logits, labels)
-                loss = bce + (1.0 - dice.mean())
+                if loss_type == "focal_tversky":
+                    tp = (probabilities * labels).sum(dims)
+                    fp = (probabilities * (1.0 - labels)).sum(dims)
+                    fn = ((1.0 - probabilities) * labels).sum(dims)
+                    alpha = getattr(self.config, "tversky_alpha", 0.3)
+                    beta = getattr(self.config, "tversky_beta", 0.7)
+                    gamma = getattr(self.config, "tversky_gamma", 1.33)
+                    eps = 1.0
+                    tversky = (tp + eps) / (tp + alpha * fp + beta * fn + eps)
+                    clamped_diff = torch.clamp(1.0 - tversky, min=1e-7, max=1.0)
+                    ftl = torch.pow(clamped_diff, 1.0 / gamma)
+                    loss = bce + ftl.mean()
+                else:
+                    intersection = (probabilities * labels).sum(dims)
+                    dice = (2 * intersection + 1.0) / (
+                        probabilities.sum(dims) + labels.sum(dims) + 1.0
+                    )
+                    loss = bce + (1.0 - dice.mean())
 
             return {"loss": loss, "logits": logits}
 
@@ -499,6 +525,10 @@ def _(AMFUConfig, AMFUNet, CFG, SegmentationDataset, mo, paper_data):
         image_size=CFG.image_size,
         use_dag=CFG.use_dag,
         use_mfef=CFG.use_mfef,
+        loss_type=getattr(CFG, "loss_type", "focal_tversky"),
+        tversky_alpha=getattr(CFG, "tversky_alpha", 0.3),
+        tversky_beta=getattr(CFG, "tversky_beta", 0.7),
+        tversky_gamma=getattr(CFG, "tversky_gamma", 1.33),
     )
     model = AMFUNet(model_config)
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
