@@ -97,11 +97,10 @@ def _(dataclass, mo):
         # Architecture toggles
         use_dag: bool = True
         use_mfef: bool = False
-        image_modality: str = "enhanced"  # "srad_only", "clahe_only", "enhanced", "raw"
+        image_modality: str = "raw"  # "srad_only", "clahe_only", "enhanced", "raw"
         use_raw_image: bool = False
-        run_name: str = "dag_boundary_focaltversky"
-        loss_type: str = "boundary_focal_tversky"  # "boundary_focal_tversky" (cold boundary) or "focal_tversky"
-        boundary_weight: float = 0.5
+        run_name: str = "unet_dag_focaltversky"
+        loss_type: str = "focal_tversky"
         tversky_alpha: float = 0.3
         tversky_beta: float = 0.7
         tversky_gamma: float = 1.33
@@ -384,8 +383,7 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             image_size=256,
             use_dag=True,
             use_mfef=True,
-            loss_type="boundary_focal_tversky",
-            boundary_weight=0.5,
+            loss_type="focal_tversky",
             tversky_alpha=0.3,
             tversky_beta=0.7,
             tversky_gamma=1.33,
@@ -397,7 +395,6 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             self.use_dag = use_dag
             self.use_mfef = use_mfef
             self.loss_type = loss_type
-            self.boundary_weight = boundary_weight
             self.tversky_alpha = tversky_alpha
             self.tversky_beta = tversky_beta
             self.tversky_gamma = tversky_gamma
@@ -474,35 +471,26 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
                 labels_f32 = labels.float()
                 probabilities = torch.sigmoid(logits_f32)
                 dims = (1, 2, 3)
-                loss_type = getattr(self.config, "loss_type", "boundary_focal_tversky")
-                bce = F.binary_cross_entropy_with_logits(logits_f32, labels_f32)
-
-                tp = (probabilities * labels_f32).sum(dims)
-                fp = (probabilities * (1.0 - labels_f32)).sum(dims)
-                fn = ((1.0 - probabilities) * labels_f32).sum(dims)
-                alpha = getattr(self.config, "tversky_alpha", 0.3)
-                beta = getattr(self.config, "tversky_beta", 0.7)
-                gamma = getattr(self.config, "tversky_gamma", 1.33)
-                eps = 1.0
-                tversky = (tp + eps) / (tp + alpha * fp + beta * fn + eps)
-                clamped_diff = torch.clamp(1.0 - tversky, min=1e-7, max=1.0)
-                ftl = torch.pow(clamped_diff, 1.0 / gamma)
-
-                if loss_type == "boundary_focal_tversky":
-                    reg_loss = bce + ftl.mean()
-                    bnd_pred = extract_boundary(probabilities)
-                    bnd_gt = extract_boundary(labels_f32)
-                    bnd_inter = (bnd_pred * bnd_gt).sum(dims)
-                    bnd_union = bnd_pred.sum(dims) + bnd_gt.sum(dims)
-                    bnd_dice = (2.0 * bnd_inter + 1.0) / (bnd_union + 1.0)
-                    bnd_loss = (1.0 - bnd_dice).mean()
-
-                    lambda_bnd = float(getattr(self.config, "boundary_weight", 0.5))
-                    loss = reg_loss + lambda_bnd * bnd_loss
-                elif loss_type == "focal_tversky":
+                loss_type = getattr(self.config, "loss_type", "focal_tversky")
+                bce = F.binary_cross_entropy_with_logits(logits, labels)
+                if loss_type == "focal_tversky":
+                    tp = (probabilities * labels).sum(dims)
+                    fp = (probabilities * (1.0 - labels)).sum(dims)
+                    fn = ((1.0 - probabilities) * labels).sum(dims)
+                    alpha = getattr(self.config, "tversky_alpha", 0.3)
+                    beta = getattr(self.config, "tversky_beta", 0.7)
+                    gamma = getattr(self.config, "tversky_gamma", 1.33)
+                    eps = 1.0
+                    tversky = (tp + eps) / (tp + alpha * fp + beta * fn + eps)
+                    clamped_diff = torch.clamp(1.0 - tversky, min=1e-7, max=1.0)
+                    ftl = torch.pow(clamped_diff, 1.0 / gamma)
                     loss = bce + ftl.mean()
                 else:
-                    raise ValueError(f"Unsupported loss_type: {loss_type!r}. Use 'boundary_focal_tversky' or 'focal_tversky'.")
+                    intersection = (probabilities * labels).sum(dims)
+                    dice = (2 * intersection + 1.0) / (
+                        probabilities.sum(dims) + labels.sum(dims) + 1.0
+                    )
+                    loss = bce + (1.0 - dice.mean())
 
             return {"loss": loss, "logits": logits}
 
@@ -576,8 +564,7 @@ def _(AMFUConfig, AMFUNet, CFG, SegmentationDataset, mo, paper_data):
         image_size=CFG.image_size,
         use_dag=CFG.use_dag,
         use_mfef=CFG.use_mfef,
-        loss_type=getattr(CFG, "loss_type", "boundary_focal_tversky"),
-        boundary_weight=getattr(CFG, "boundary_weight", 0.5),
+        loss_type=getattr(CFG, "loss_type", "focal_tversky"),
         tversky_alpha=getattr(CFG, "tversky_alpha", 0.3),
         tversky_beta=getattr(CFG, "tversky_beta", 0.7),
         tversky_gamma=getattr(CFG, "tversky_gamma", 1.33),
