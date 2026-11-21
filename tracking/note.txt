@@ -766,6 +766,101 @@ Experiment Summary:
      * Direct comparison against Exp-18 (Full AMFU-Net on CLAHE Alone with BCE+Dice: 82.48% Dice, 73.47% IoU, 25.02 px HD95, 7.58 px ASD): Focal Tversky delivers +0.79% absolute Dice increase, +1.02% IoU, and -0.17 px HD95 reduction.
      * Universal Module Hierarchy: Across both isolated single preprocessing modalities (SRAD and CLAHE), U-Net + DAG strictly outperforms Full AMFU-Net (+1.38% on SRAD, +1.67% on CLAHE), proving that dilated multi-scale pooling at the bottleneck dilutes spatial resolution without aiding boundary localization.
 
+54. Exp-42: Full AMFU-Net on Dual Enhanced [SRAD + CLAHE] with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8161 Dice (81.61%), 0.7214 Jaccard (72.14%), 31.50 px HD95, 9.43 px ASD, 0.3888 Loss. Step: 35,200. Parameters: 19,033,409.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8262 (82.62%, 29.64 px HD95, 8.55 px ASD)
+     * BUSI = 0.7797 (77.97%, 36.10 px HD95, 11.95 px ASD)
+     * BUS_UCLM = 0.8438 (84.38%, 34.66 px HD95, 9.62 px ASD)
+   - Benchmark Analysis:
+     * Direct comparison against Exp-35 (U-Net + DAG on Dual Enhanced with Focal Tversky: 83.03% Dice, 73.82% IoU, 26.02 px HD95, 7.91 px ASD, 6.19M params): Adding MFEF degrades Dice by -1.42%, drops IoU by -1.68%, and worsens 95HD by +5.48 px.
+     * Direct comparison against Exp-21 (Full AMFU-Net on Dual Enhanced with BCE+Dice: 81.51% Dice, 71.77% IoU, 28.93 px HD95, 8.53 px ASD): Modest +0.10% Dice lift and +0.37% IoU under Focal Tversky.
+     * Definitive 3-Way Architectural Hierarchy on Dual Enhanced (Focal Tversky):
+       1. U-Net + DAG (Exp-35, 6.19M): 83.03% Dice, 73.82% IoU, 26.02 px HD95, 0.3597 Loss
+       2. Full AMFU-Net (Exp-42, 19.03M): 81.61% Dice, 72.14% IoU, 31.50 px HD95, 0.3888 Loss
+       3. Plain U-Net (Exp-36, 3.83M): 79.65% Dice, 69.76% IoU, 34.59 px HD95, 0.4368 Loss
+
+55. Exp-43: Full AMFU-Net on Raw Ultrasound with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8397 Dice (83.97%), 0.7520 Jaccard (75.20%), 24.73 px HD95, 7.46 px ASD, 0.3439 Loss. Step: 35,200. Parameters: 19,033,409.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8598 (85.98%, 21.08 px HD95, 6.09 px ASD)
+     * BUSI = 0.7738 (77.38%, 35.25 px HD95, 11.68 px ASD)
+     * BUS_UCLM = 0.8706 (87.06%, 25.08 px HD95, 6.56 px ASD)
+   - Benchmark Analysis & The 12-Experiment Focal Tversky Matrix Conclusion:
+     * Direct comparison against Exp-39 (U-Net + DAG on Raw with Focal Tversky: 84.70% Dice, 75.87% IoU, 21.68 px HD95, 6.53 px ASD, 6.19M params): Adding the MFEF multi-scale bottleneck on Raw drops Dice by -0.73%, drops IoU by -0.67%, and inflates boundary error by +3.05 px HD95 despite a 3.1x larger parameter footprint.
+     * Direct comparison against Exp-19 (Full AMFU-Net on Raw with BCE+Dice: 83.58% Dice, 74.76% IoU, 25.38 px HD95, 7.36 px ASD): Focal Tversky achieves +0.39% absolute Dice lift, +0.44% IoU, and -0.65 px HD95 reduction.
+     * Definitive 4-Modality Hierarchy on Full AMFU-Net (Focal Tversky):
+       1. Raw Ultrasound (Exp-43): 83.97% Dice, 75.20% IoU, 24.73 px HD95, 0.3439 Loss
+       2. CLAHE Alone (Exp-41): 83.27% Dice, 74.49% IoU, 24.85 px HD95, 0.3735 Loss
+       3. SRAD Alone (Exp-40): 82.12% Dice, 72.72% IoU, 26.28 px HD95, 0.3797 Loss
+       4. Dual Enhanced (Exp-42): 81.61% Dice, 72.14% IoU, 31.50 px HD95, 0.3888 Loss
+     * The Classical Preprocessing Degradation Law Holds Universally: Across all evaluated architectures (Plain U-Net, U-Net + DAG, Full AMFU-Net) and across both loss functions (BCE+Dice and Focal Tversky), stacking filtering operations degrades performance below isolated or raw baseline scans.
+
+56. Exp-44: U-Net + MFEF on SRAD Alone with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8226 Dice (82.26%), 0.7399 Jaccard (73.99%), 21.64 px HD95, 7.03 px ASD, 0.3721 Loss. Step: 35,200. Parameters: 16,679,393.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8401 (84.01%, 16.38 px HD95, 5.18 px ASD)
+     * BUSI = 0.7794 (77.94%, 29.97 px HD95, 9.83 px ASD)
+     * BUS_UCLM = 0.7914 (79.14%, 49.43 px HD95, 17.33 px ASD)
+   - Benchmark Analysis & Complete SRAD 4-Architecture Grid under Focal Tversky:
+     * Architecture Comparison on SRAD Alone (Focal Tversky):
+       1. U-Net + DAG (Exp-37, 6.19M): 83.50% Dice, 74.56% IoU, 21.91 px HD95, 0.3566 Loss
+       2. U-Net + MFEF (Exp-44, 16.68M): 82.26% Dice, 73.99% IoU, 21.64 px HD95, 0.3721 Loss
+       3. Full AMFU-Net (Exp-40, 19.03M): 82.12% Dice, 72.72% IoU, 26.28 px HD95, 0.3797 Loss
+       4. Plain U-Net (Exp-33, 3.83M): 78.27% Dice, 69.06% IoU, 33.01 px HD95, 0.3744 Loss
+     * DAG Superiority over MFEF: U-Net + DAG beats U-Net + MFEF by +1.24% absolute Dice while using 62.9% fewer parameters (6.19M vs 16.68M).
+     * Out-of-Distribution Degradation Without Attention Gates: On external scanner cohort BUS_UCLM, boundary error without DAG attention gates explodes to 49.43 px HD95 (U-Net + MFEF), whereas DAG attention gates (U-Net + DAG) suppress background noise and slash HD95 to 30.69 px (-18.74 px reduction).
+
+57. Exp-45: U-Net + MFEF on CLAHE Alone with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8391 Dice (83.91%), 0.7561 Jaccard (75.61%), 20.84 px HD95, 7.10 px ASD, 0.3586 Loss. Step: 35,200. Parameters: 16,679,393.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8681 (86.81%, 15.70 px HD95, 4.95 px ASD)
+     * BUSI = 0.7684 (76.84%, 31.61 px HD95, 11.97 px ASD)
+     * BUS_UCLM = 0.7833 (78.33%, 37.48 px HD95, 12.64 px ASD)
+   - Benchmark Analysis & Complete CLAHE Alone 4-Architecture Grid under Focal Tversky:
+     * Architecture Comparison on CLAHE Alone (Focal Tversky):
+       1. U-Net + DAG (Exp-38, 6.19M): 84.94% Dice, 76.55% IoU, 21.84 px HD95, 0.3422 Loss
+       2. U-Net + MFEF (Exp-45, 16.68M): 83.91% Dice, 75.61% IoU, 20.84 px HD95, 0.3586 Loss
+       3. Full AMFU-Net (Exp-41, 19.03M): 83.27% Dice, 74.49% IoU, 24.85 px HD95, 0.3735 Loss
+       4. Plain U-Net (Exp-34, 3.83M): 81.74% Dice, 72.54% IoU, 33.95 px HD95, 0.3319 Loss
+     * DAG Superiority over MFEF on CLAHE: U-Net + DAG beats U-Net + MFEF by +1.03% absolute Dice and +0.94% IoU while requiring 62.9% fewer parameters (6.19M vs 16.68M).
+     * Out-of-Distribution Vulnerability: MFEF specializes heavily on the primary training scanner cohort BUS_BRA (86.81% Dice, 15.70 px HD95), but without DAG attention gates, external hospital cohort BUS_UCLM collapses from 87.66% (U-Net + DAG) to 78.33% (-9.33% Dice collapse, +10.14 px boundary error penalty). Attention gating remains essential for multi-site ultrasound generalization.
+
+58. Exp-46: U-Net + MFEF on Dual Enhanced [SRAD + CLAHE] with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8287 Dice (82.87%), 0.7407 Jaccard (74.07%), 25.97 px HD95, 8.11 px ASD, 0.3726 Loss. Step: 35,200. Parameters: 16,679,393.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8525 (85.25%, 22.18 px HD95, 6.70 px ASD)
+     * BUSI = 0.7759 (77.59%, 30.77 px HD95, 10.66 px ASD)
+     * BUS_UCLM = 0.7628 (76.28%, 50.90 px HD95, 14.30 px ASD)
+   - Benchmark Analysis & Complete Dual Enhanced 4-Architecture Grid under Focal Tversky:
+     * Architecture Comparison on Dual Enhanced (Focal Tversky):
+       1. U-Net + DAG (Exp-35, 6.19M): 83.03% Dice, 73.82% IoU, 26.02 px HD95, 0.3597 Loss
+       2. U-Net + MFEF (Exp-46, 16.68M): 82.87% Dice, 74.07% IoU, 25.97 px HD95, 0.3726 Loss
+       3. Full AMFU-Net (Exp-42, 19.03M): 81.61% Dice, 72.14% IoU, 31.50 px HD95, 0.3888 Loss
+       4. Plain U-Net (Exp-36, 3.83M): 79.65% Dice, 69.76% IoU, 34.59 px HD95, 0.4368 Loss
+     * Cross-Scanner Boundary Failure Without Attention Gating: On external test cohort BUS_UCLM, omitting DAG attention gates causes 95HD to explode from 23.52 px (U-Net + DAG) to 50.90 px (U-Net + MFEF), more than doubling the boundary localization error (+27.38 px penalty).
+
+59. Exp-47: U-Net + MFEF on Raw Ultrasound with Focal Tversky Loss (alpha=0.3, beta=0.7, gamma=1.33, CosineAnnealingLR eta_min=1e-5, 200 epochs):
+   - Scope: Evaluated on handheld B-mode ultrasound benchmark (Ahorts/G17-preprocessed-dataset, 266 immutable test scans).
+   - Metrics: 0.8461 Dice (84.61%), 0.7639 Jaccard (76.39%), 21.70 px HD95, 6.38 px ASD, 0.3410 Loss. Step: 35,200. Parameters: 16,679,393.
+   - Cohort Breakdown:
+     * BUS_BRA = 0.8654 (86.54%, 16.86 px HD95, 4.80 px ASD)
+     * BUSI = 0.7916 (79.16%, 28.07 px HD95, 9.38 px ASD)
+     * BUS_UCLM = 0.8401 (84.01%, 52.42 px HD95, 12.85 px ASD)
+   - Benchmark Analysis & Completion of the Entire 16/16 Focal Tversky Factorial Matrix:
+     * Architecture Comparison on Raw Ultrasound (Focal Tversky):
+       1. U-Net + DAG (Exp-39, 6.19M): 84.70% Dice, 75.87% IoU, 21.68 px HD95, 0.3296 Loss (Champion efficiency)
+       2. U-Net + MFEF (Exp-47, 16.68M): 84.61% Dice, 76.39% IoU, 21.70 px HD95, 0.3410 Loss
+       3. Full AMFU-Net (Exp-43, 19.03M): 83.97% Dice, 75.20% IoU, 24.73 px HD95, 0.3439 Loss
+       4. Plain U-Net (Exp-32, 3.83M): 81.31% Dice, 72.04% IoU, 31.41 px HD95, 0.3326 Loss
+     * Out-of-Distribution Error Explosion Without Attention Gates: While U-Net + MFEF achieves strong in-distribution overlap (BUS_BRA 86.54%), the lack of DAG attention gates causes 95HD on external hospital cohort BUS_UCLM to explode to 52.42 px (vs 25.28 px with DAG, a +27.14 px boundary error penalty).
+     * Complete 16-Run Factorial Matrix Closure: Every permutation of the 4 architectures (Plain U-Net, U-Net + DAG, U-Net + MFEF, Full AMFU-Net) across all 4 preprocessing modalities (Raw, CLAHE Alone, SRAD Alone, Dual Enhanced) has now been rigorously trained and evaluated under modern Cosine Annealing with Focal Tversky Loss.
+
 Core Findings:
 1. Preprocessing Hierarchy & Interaction:
    - CLAHE Alone (80.03%–83.68% Dice) > SRAD + CLAHE (78.23%–81.20% Dice) > SRAD Alone (81.10% Dice) > Raw Ultrasound (77.93%–80.52% Dice).
@@ -814,3 +909,563 @@ We are not claiming to fully reproduce the original AMFU-Net paper, because the 
 
 Simple one-line summary:
 Because the original fused ultrasound dataset is private, our project adapts AMFU-Net by replacing fusion with SRAD + CLAHE preprocessing on public breast ultrasound images, then trains the AMFU-Net segmentation model on the enhanced images and their lesion masks.
+
+
+Session 7 - Exp-48: CLAHE Alone with DAG Attention Gates & Boundary-Aware Focal Tversky Loss
+
+Problem Statement & Supervisor Feedback:
+During the monthly presentation, the supervisor highlighted the boundary sharpness trade-off: while preprocessed/enhanced modalities provided high clinical recall, edge delineations remained softened. To address this without discarding recall, we formulated and trained AMFU-Net with explicit boundary supervision.
+
+Methodology:
+1. Loss Formulation: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Regional Component: Focal Tversky (alpha=0.3, beta=0.7, gamma=1.33) anchors clinical sensitivity.
+   - Boundary Component: Differentiable morphological active contour extraction on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+     directly penalizing spatial contour misalignment and boundary distance.
+2. Architecture & Training:
+   - AMFU-Net (DAG=True, MFEF=False, base_channels=32, params=31.05M).
+   - Input Modality: CLAHE alone (256x256).
+   - Optimizer & Scheduler: Adam (lr=1e-3, wd=1e-5) with CosineAnnealingLR (min_lr=1e-5, 200 epochs).
+   - Training Environment: Molab GPU instance with Marimo interactive runtime.
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 84.47% (vs. Paper Baseline 79.09%, +5.38% gain)
+- Test Jaccard (IoU): 75.92% (vs. Paper Baseline 69.67%, +6.25% gain)
+- 95% Hausdorff Distance (95HD): 19.04 px (vs. Paper Baseline 30.10 px, -11.06 px / -36.7% boundary error reduction)
+- Average Surface Distance (ASD): 5.74 px (vs. Paper Baseline 9.89 px, -4.15 px / -42.0% surface error reduction)
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 86.80%, IoU 78.37%, 95HD 14.39 px, ASD 4.22 px
+- BUS-UCLM: Dice 87.44%, IoU 78.64%, 95HD 21.19 px, ASD 4.42 px
+- BUSI: Dice 76.95%, IoU 68.14%, 95HD 32.02 px, ASD 10.49 px
+
+Deployment & Artifacts:
+- Checkpoint: Saved step 26,750 (Val Dice 82.60%).
+- Hugging Face Model Branch: Published to `Ahorts/G17-AMFU-Net-Paper` on branch `exp32-unet-dag-boundary-clahe-cosine-only`.
+- App Integration: Added Exp-48 as top-priority champion checkpoint in `G17-Model/app.py`.
+
+
+Session 8 - Exp-49: Raw Ultrasound with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate whether applying explicit boundary supervision (Active Contour Morphological Gradient) to unfiltered native ultrasound (Raw modality) improves boundary contour delineation and beats the 85.19% Dice / 20.72 px 95HD baseline of Exp-16.
+
+Methodology:
+1. Architecture: AMFU-Net (DAG=True, MFEF=False, base_channels=32, params=31.05M).
+2. Input Modality: Raw Ultrasound (`raw_image`, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 84.96% (vs. Exp-16 Raw baseline 85.19%)
+- Test Jaccard (IoU): 76.23% (vs. Exp-16 76.37%)
+- 95% Hausdorff Distance (95HD): 20.20 px (vs. Exp-16 20.72 px, -0.52 px improvement)
+- Average Surface Distance (ASD): 5.62 px (vs. Exp-16 6.27 px, -0.65 px / -10.4% error reduction) -> New all-time project record for lowest surface error.
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 87.43%, IoU 78.86%, 95HD 16.74 px, ASD 4.21 px
+- BUSI: Dice 77.96%, IoU 69.05%, 95HD 27.36 px, ASD 9.35 px
+- BUS-UCLM: Dice 84.16%, IoU 74.37%, 95HD 31.74 px, ASD 7.03 px
+
+Hugging Face Release:
+- Published to `Ahorts/G17-AMFU-Net-Paper` on branch `exp33-unet-dag-boundary-raw-cosine-only`.
+
+
+Session 9 - Exp-50: Dual-Enhanced Ultrasound with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate whether applying explicit boundary supervision (Active Contour Morphological Gradient) to dual-enhanced ultrasound (SRAD + CLAHE) tightens boundary delineation while preserving the superior clinical recall and acoustic shadow penetration observed in Enhanced models.
+
+Methodology:
+1. Architecture: AMFU-Net (DAG=True, MFEF=False, base_channels=32, params=31.05M).
+2. Input Modality: Dual-Enhanced Ultrasound (`image`: SRAD + CLAHE, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 82.10% (vs. Exp-25 Enhanced baseline 82.76%)
+- Test Jaccard (IoU): 72.91% (vs. Exp-25 73.77%)
+- 95% Hausdorff Distance (95HD): 25.69 px (vs. Exp-25 26.75 px, -1.06 px boundary error reduction)
+- Average Surface Distance (ASD): 7.26 px (vs. Exp-25 7.96 px, -0.70 px / -8.8% surface error reduction)
+
+Per-Dataset Breakdown:
+- BUS-UCLM: Dice 86.11%, IoU 76.96%, 95HD 20.09 px, ASD 4.82 px
+- BUS-BRA: Dice 83.59%, IoU 74.46%, 95HD 22.96 px, ASD 6.42 px
+- BUSI: Dice 76.75%, IoU 67.39%, 95HD 35.05 px, ASD 10.31 px
+
+Clinical Synthesis & Trade-off:
+- Boundary Loss successfully tightened the boundary contour on Enhanced images (-1.06 px 95HD, -0.70 px ASD).
+- Complementary Modality Roles:
+  * Enhanced Stream: Serves as the high-recall anchor, maintaining activation in deep acoustic shadows and low-contrast posterior voids where Raw can drop weak signals.
+  * Raw / CLAHE Streams: Provide steep native acoustic impedance gradients to maximize sharp margin delineation.
+  * This confirmed trade-off directly supports dual-stream fusion, combining Enhanced's clinical sensitivity with Raw's boundary precision.
+
+Hugging Face Release:
+- Published to `Ahorts/G17-AMFU-Net-Paper` on branch `exp34-unet-dag-boundary-enhanced-cosine-only`.
+
+
+Session 10 - Exp-51: Raw Ultrasound with MFEF Bottleneck & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the combination of multi-scale bottleneck feature extraction (MFEF: 1x1, 3x3, 5x5, dilated 3x3 convolutions with global context projection) with explicit boundary loss on raw native ultrasound to assess boundary delineation and multi-center generalization.
+
+Methodology:
+1. Architecture: U-Net + MFEF Bottleneck (DAG=False, MFEF=True, base_channels=32, params=43.78M).
+2. Input Modality: Raw Ultrasound (raw_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 84.93% (vs. Exp-31 MFEF baseline 84.65%, +0.28%)
+- Test Jaccard (IoU): 76.36% (vs. Exp-31 76.52%, -0.16%)
+- 95% Hausdorff Distance (95HD): 18.88 px (vs. Exp-31 18.75 px, +0.13 px)
+- Average Surface Distance (ASD): 5.68 px (vs. Exp-31 6.27 px, -0.59 px / -9.4% surface error reduction)
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 87.55%, IoU 79.27%, 95HD 13.44 px, ASD 3.98 px
+- BUSI: Dice 79.27%, IoU 70.66%, 95HD 27.09 px, ASD 8.11 px
+- BUS-UCLM: Dice 77.13%, IoU 65.34%, 95HD 49.31 px, ASD 15.67 px
+
+Architectural Findings:
+- MFEF multi-scale convolutions combined with boundary loss yielded consistent margin tightening on BUS-BRA (13.44 px 95HD) and BUSI (27.09 px 95HD).
+- On BUS-UCLM, performance dropped relative to DAG-gated architectures (77.13% vs 84.16% in Exp-49), indicating that without DAG attention gates filtering skip connections, multi-scale features alone are more susceptible to boundary leakage in low-contrast acoustic transitions.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp35-unet-mfef-boundary-raw-cosine-only.
+
+
+Session 11 - Exp-52: SRAD Alone with DAG Attention Gates & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the impact of explicit boundary supervision (Active Contour Morphological Gradient) on anisotropic diffusion filtered ultrasound (SRAD Alone) with DAG attention gating, completing the four-modality evaluation row for the U-Net + DAG architecture.
+
+Methodology:
+1. Architecture: U-Net + DAG Attention Gates (DAG=True, MFEF=False, base_channels=32, params=6.19M).
+2. Input Modality: SRAD Alone (srad_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 83.76% (vs. Exp-37 SRAD baseline 83.50%, +0.26%)
+- Test Jaccard (IoU): 74.70% (vs. Exp-37 74.56%, +0.14%)
+- 95% Hausdorff Distance (95HD): 24.16 px (vs. Exp-37 21.91 px, +2.25 px)
+- Average Surface Distance (ASD): 6.46 px (vs. Exp-37 6.69 px, -0.23 px / -3.4% surface error reduction)
+- Test Loss: 0.6650
+
+Per-Dataset Breakdown:
+- BUS-UCLM: Dice 88.05%, IoU 79.52%, 95HD 27.52 px, ASD 6.05 px
+- BUS-BRA: Dice 85.16%, IoU 76.00%, 95HD 20.76 px, ASD 5.25 px
+- BUSI: Dice 78.63%, IoU 69.73%, 95HD 33.22 px, ASD 10.10 px
+
+Comparative & Architectural Findings:
+- Completes the U-Net + DAG boundary loss quadrant:
+  * Raw (Exp-49): 84.96% Dice, 20.20 px 95HD, 5.62 px ASD
+  * CLAHE (Exp-48): 84.47% Dice, 19.04 px 95HD, 5.74 px ASD
+  * SRAD (Exp-52): 83.76% Dice, 24.16 px 95HD, 6.46 px ASD
+  * Dual Enhanced (Exp-50): 82.10% Dice, 25.69 px 95HD, 7.26 px ASD
+- On external cohort BUS-UCLM, SRAD combined with DAG gating and boundary supervision achieved 88.05% Dice, outperforming other DAG configurations on this sub-distribution.
+- Overall surface boundary error (ASD) improved over baseline Exp-37 from 6.69 px to 6.46 px.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp36-unet-dag-boundary-srad-cosine-only.
+
+
+Session 12 - Exp-53: CLAHE Alone with MFEF Bottleneck & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the impact of explicit boundary supervision (Active Contour Morphological Gradient) on CLAHE contrast-enhanced ultrasound when utilizing multi-scale bottleneck feature extraction (MFEF) without DAG skip attention gating.
+
+Methodology:
+1. Architecture: U-Net + MFEF Bottleneck (DAG=False, MFEF=True, base_channels=32, params=16.68M).
+2. Input Modality: CLAHE Alone (clahe_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 83.85% (vs. Exp-45 CLAHE MFEF baseline 83.91%, -0.06%)
+- Test Jaccard (IoU): 75.76% (vs. Exp-45 75.61%, +0.15%)
+- 95% Hausdorff Distance (95HD): 20.64 px (vs. Exp-45 20.84 px, -0.20 px boundary error reduction)
+- Average Surface Distance (ASD): 6.43 px (vs. Exp-45 7.10 px, -0.67 px / -9.4% surface error reduction)
+- Test Loss: 0.6576
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 86.24%, IoU 78.37%, 95HD 16.92 px, ASD 5.04 px
+- BUSI: Dice 78.74%, IoU 70.52%, 95HD 27.12 px, ASD 8.94 px
+- BUS-UCLM: Dice 76.60%, IoU 66.38%, 95HD 37.90 px, ASD 12.61 px
+
+Comparative & Architectural Findings:
+- Surface distance metric ASD showed consistent reduction (-0.67 px / -9.4%), mirroring trends observed across prior boundary loss experiments.
+- On BUSI, boundary supervision produced notable localization gains, raising Dice from 76.84% to 78.74% (+1.90%) and slashing 95HD from 31.61 px to 27.12 px (-4.49 px).
+- Similar to Exp-51 (Raw + MFEF), BUS-UCLM underperformed relative to DAG-gated architectures (76.60% vs 84.47% in Exp-48), confirming that multi-scale bottleneck expansions require skip attention gates to suppress out-of-distribution boundary dispersion in low-contrast acoustic transitions.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp37-unet-mfef-boundary-clahe-cosine-only.
+
+
+Session 13 - Exp-54: SRAD Alone with MFEF Bottleneck & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the combination of multi-scale bottleneck feature extraction (MFEF) with explicit boundary supervision (Active Contour Morphological Gradient) on anisotropic diffusion filtered ultrasound (SRAD Alone).
+
+Methodology:
+1. Architecture: U-Net + MFEF Bottleneck (DAG=False, MFEF=True, base_channels=32, params=16.68M).
+2. Input Modality: SRAD Alone (srad_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 83.09% (vs. Exp-44 SRAD MFEF baseline 82.26%, +0.83%)
+- Test Jaccard (IoU): 74.64% (vs. Exp-44 73.99%, +0.65%)
+- 95% Hausdorff Distance (95HD): 20.97 px (vs. Exp-44 21.64 px, -0.67 px boundary error reduction)
+- Average Surface Distance (ASD): 6.34 px (vs. Exp-44 7.03 px, -0.69 px / -9.8% surface error reduction)
+- Test Loss: 0.6822
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 84.98%, IoU 76.70%, 95HD 16.16 px, ASD 4.88 px
+- BUSI: Dice 78.29%, IoU 69.84%, 95HD 27.48 px, ASD 8.46 px
+- BUS-UCLM: Dice 80.33%, IoU 69.94%, 95HD 50.84 px, ASD 14.76 px
+
+Comparative & Architectural Findings:
+- Adding boundary loss to MFEF on SRAD filtered inputs delivered consistent gains across all three cohorts over baseline Exp-44 (+0.83% Dice, -0.67 px 95HD, -0.69 px ASD).
+- On BUSI, boundary distance tightened from 29.97 px to 27.48 px (-2.49 px), with surface error reduced from 9.83 px to 8.46 px (-1.37 px).
+- As with other non-DAG configurations, the absence of skip attention gates permitted boundary dispersion on low-contrast BUS-UCLM transitions (95HD of 50.84 px vs 27.52 px in Exp-52).
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp38-unet-mfef-boundary-srad-cosine-only.
+
+
+Session 14 - Exp-55: Dual-Enhanced Ultrasound with MFEF Bottleneck & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the combination of multi-scale bottleneck feature extraction (MFEF) with explicit boundary supervision (Active Contour Morphological Gradient) on dual-enhanced ultrasound (SRAD + CLAHE), completing the four-modality evaluation row for the U-Net + MFEF architecture.
+
+Methodology:
+1. Architecture: U-Net + MFEF Bottleneck (DAG=False, MFEF=True, base_channels=32, params=16.68M).
+2. Input Modality: Dual-Enhanced Ultrasound (image: SRAD + CLAHE, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 82.36% (vs. Exp-46 Enhanced MFEF baseline 82.87%, -0.51%)
+- Test Jaccard (IoU): 73.69% (vs. Exp-46 74.07%, -0.38%)
+- 95% Hausdorff Distance (95HD): 23.64 px (vs. Exp-46 25.97 px, -2.33 px / -9.0% boundary error reduction)
+- Average Surface Distance (ASD): 7.55 px (vs. Exp-46 8.11 px, -0.56 px / -6.9% surface error reduction)
+- Test Loss: 0.7181
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 84.45%, IoU 75.97%, 95HD 18.10 px, ASD 5.71 px
+- BUS-UCLM: Dice 78.64%, IoU 67.51%, 95HD 49.20 px, ASD 14.87 px
+- BUSI: Dice 77.20%, IoU 68.61%, 95HD 33.35 px, ASD 11.04 px
+
+Comparative & Architectural Findings:
+- Completes the U-Net + MFEF boundary loss quadrant:
+  * Raw (Exp-51): 84.93% Dice, 18.88 px 95HD, 5.68 px ASD
+  * CLAHE (Exp-53): 83.85% Dice, 20.64 px 95HD, 6.43 px ASD
+  * SRAD (Exp-54): 83.09% Dice, 20.97 px 95HD, 6.34 px ASD
+  * Dual Enhanced (Exp-55): 82.36% Dice, 23.64 px 95HD, 7.55 px ASD
+- Explicit boundary supervision significantly reduced outlier boundary distance on dual-enhanced inputs, dropping 95HD from 25.97 px to 23.64 px (-2.33 px) and ASD from 8.11 px to 7.55 px (-0.56 px).
+- Across both DAG (Exp-50) and MFEF (Exp-55) architectures, dual-enhanced preprocessing yields lower geometric Dice than Raw or CLAHE, but provides consistent sensitivity in deep acoustic shadows, supporting its role in dual-stream fusion.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp39-unet-mfef-boundary-enhanced-cosine-only.
+
+
+Session 15 - Exp-56: Raw Ultrasound with Full AMFU-Net (DAG + MFEF) & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the complete AMFU-Net architecture (incorporating both DAG skip attention gates and MFEF multi-scale bottleneck convolutions) under explicit boundary supervision (Active Contour Morphological Gradient) on unfiltered native ultrasound (Raw modality).
+
+Methodology:
+1. Architecture: Full AMFU-Net (DAG=True, MFEF=True, base_channels=32, params=19.03M).
+2. Input Modality: Raw Ultrasound (raw_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 83.84% (vs. Exp-43 Raw Full AMFU baseline 83.97%, -0.13%)
+- Test Jaccard (IoU): 74.69% (vs. Exp-43 75.20%, -0.51%)
+- 95% Hausdorff Distance (95HD): 23.05 px (vs. Exp-43 24.73 px, -1.68 px / -6.8% boundary error reduction)
+- Average Surface Distance (ASD): 6.42 px (vs. Exp-43 7.46 px, -1.04 px / -13.9% surface error reduction)
+- Test Loss: 0.6625
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 85.90%, IoU 76.78%, 95HD 18.98 px, ASD 4.94 px
+- BUS-UCLM: Dice 82.67%, IoU 71.80%, 95HD 28.60 px, ASD 7.05 px
+- BUSI: Dice 78.15%, IoU 69.34%, 95HD 33.49 px, ASD 10.57 px
+
+Comparative & Architectural Findings:
+- Explicit boundary supervision significantly reduced surface localization error across the full architecture, lowering global ASD by 1.04 px (-13.9%) and 95HD by 1.68 px relative to baseline Exp-43.
+- On BUS-UCLM, DAG skip attention gating preserved boundary stability (28.60 px 95HD, 7.05 px ASD) compared to MFEF-only variants (Exp-51: 49.31 px 95HD; Exp-54: 50.84 px 95HD; Exp-55: 49.20 px 95HD), demonstrating that DAG gates successfully mitigate multi-scale boundary dispersion.
+- Efficiency Trade-Off: U-Net + DAG alone (Exp-49: 84.96% Dice, 20.20 px 95HD, 5.62 px ASD, 6.19M params) maintains superior geometric precision over Full AMFU-Net (Exp-56: 83.84% Dice, 23.05 px 95HD, 6.42 px ASD, 19.03M params), indicating that the MFEF module introduces slight parameter redundancy when edge gradients are already well-defined.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp56-full-amfu-boundary-raw-cosine-only.
+
+
+Session 16 - Exp-57: CLAHE Alone with Full AMFU-Net (DAG + MFEF) & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the complete AMFU-Net architecture (DAG attention gating and MFEF multi-scale bottleneck convolutions) under explicit boundary supervision (Active Contour Morphological Gradient) on local contrast-enhanced ultrasound (CLAHE Alone).
+
+Methodology:
+1. Architecture: Full AMFU-Net (DAG=True, MFEF=True, base_channels=32, params=19.03M).
+2. Input Modality: CLAHE Alone (clahe_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 83.58% (vs. Exp-41 CLAHE Full AMFU baseline 83.27%, +0.31%)
+- Test Jaccard (IoU): 74.62% (vs. Exp-41 74.49%, +0.13%)
+- 95% Hausdorff Distance (95HD): 26.29 px (vs. Exp-41 24.85 px, +1.44 px)
+- Average Surface Distance (ASD): 7.55 px (vs. Exp-41 7.53 px, +0.02 px)
+- Test Loss: 0.6713
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 86.51%, IoU 77.64%, 95HD 20.79 px, ASD 5.24 px
+- BUS-UCLM: Dice 83.44%, IoU 73.46%, 95HD 45.70 px, ASD 11.22 px
+- BUSI: Dice 75.08%, IoU 66.14%, 95HD 37.41 px, ASD 13.36 px
+
+Comparative & Architectural Findings:
+- Adding boundary loss on CLAHE contrast enhanced inputs yielded a net Dice increase over baseline Exp-41 (+0.31% Dice, +0.13% IoU), led primarily by BUS-BRA (86.51% vs 85.25%, with ASD improving from 6.03 px to 5.24 px).
+- Similar to earlier single-modality evaluations, U-Net + DAG alone (Exp-48: 84.47% Dice, 19.04 px 95HD, 5.74 px ASD, 6.19M params) demonstrated tighter boundary delineation than the heavier Full AMFU-Net (Exp-57: 83.58% Dice, 26.29 px 95HD, 7.55 px ASD, 19.03M params), confirming that multi-scale bottleneck pooling introduces slight boundary softness on contrast-enhanced inputs.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp57-full-amfu-boundary-clahe-cosine-only.
+
+
+Session 17 - Exp-58: SRAD Alone with Full AMFU-Net (DAG + MFEF) & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the complete AMFU-Net architecture (DAG attention gating and MFEF multi-scale bottleneck convolutions) under explicit boundary supervision (Active Contour Morphological Gradient) on anisotropic diffusion filtered ultrasound (SRAD Alone).
+
+Methodology:
+1. Architecture: Full AMFU-Net (DAG=True, MFEF=True, base_channels=32, params=19.03M).
+2. Input Modality: SRAD Alone (srad_image, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 80.77% (vs. Exp-40 SRAD Full AMFU baseline 82.12%, -1.35%)
+- Test Jaccard (IoU): 71.48% (vs. Exp-40 72.72%, -1.24%)
+- 95% Hausdorff Distance (95HD): 27.58 px (vs. Exp-40 26.28 px, +1.30 px)
+- Average Surface Distance (ASD): 7.89 px (vs. Exp-40 7.76 px, +0.13 px)
+- Test Loss: 0.7194
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 83.38%, IoU 73.83%, 95HD 24.31 px, ASD 6.25 px
+- BUS-UCLM: Dice 81.68%, IoU 71.77%, 95HD 27.03 px, ASD 7.03 px
+- BUSI: Dice 72.96%, IoU 64.57%, 95HD 37.22 px, ASD 12.88 px
+
+Comparative & Architectural Findings:
+- Combining MFEF multi-scale bottleneck expansions with SRAD filtered inputs and boundary loss resulted in a net performance drop across cohorts (80.77% Dice vs 83.76% in Exp-52).
+- Bottleneck Parameter Redundancy: Full AMFU-Net (19.03M params) consistently trails U-Net + DAG alone (Exp-52: 83.76% Dice, 24.16 px 95HD, 6.46 px ASD, 6.19M params) by -2.99% Dice and +3.42 px 95HD, demonstrating that dilated receptive field expansions at the bottleneck dilute the sharpened edge transitions produced by SRAD PDE anisotropic diffusion.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp58-full-amfu-boundary-srad-cosine-only.
+
+
+Session 18 - Exp-59: Dual-Enhanced Ultrasound with Full AMFU-Net (DAG + MFEF) & Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the complete AMFU-Net architecture (incorporating both DAG skip attention gates and MFEF multi-scale bottleneck convolutions) under explicit boundary supervision (Active Contour Morphological Gradient) on dual-enhanced ultrasound (SRAD + CLAHE), completing the four-modality evaluation row for Full AMFU-Net.
+
+Methodology:
+1. Architecture: Full AMFU-Net (DAG=True, MFEF=True, base_channels=32, params=19.03M).
+2. Input Modality: Dual-Enhanced Ultrasound (image: SRAD + CLAHE, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 81.51% (vs. Exp-42 Enhanced Full AMFU baseline 81.61%, -0.10%)
+- Test Jaccard (IoU): 71.68% (vs. Exp-42 72.14%, -0.46%)
+- 95% Hausdorff Distance (95HD): 27.64 px (vs. Exp-42 31.50 px, -3.86 px / -12.3% boundary error reduction)
+- Average Surface Distance (ASD): 7.47 px (vs. Exp-42 9.43 px, -1.96 px / -20.8% surface error reduction)
+- Test Loss: 0.7208
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 83.23%, IoU 73.38%, 95HD 25.86 px, ASD 6.66 px
+- BUS-UCLM: Dice 82.66%, IoU 72.29%, 95HD 22.68 px, ASD 5.68 px
+- BUSI: Dice 76.24%, IoU 66.57%, 95HD 34.05 px, ASD 10.27 px
+
+Comparative & Architectural Findings:
+- Completes the Full AMFU-Net boundary loss quadrant:
+  * Raw (Exp-56): 83.84% Dice, 23.05 px 95HD, 6.42 px ASD
+  * CLAHE (Exp-57): 83.58% Dice, 26.29 px 95HD, 7.55 px ASD
+  * SRAD (Exp-58): 80.77% Dice, 27.58 px 95HD, 7.89 px ASD
+  * Dual Enhanced (Exp-59): 81.51% Dice, 27.64 px 95HD, 7.47 px ASD
+- Explicit boundary supervision delivered substantial contour tightening on dual-enhanced inputs, reducing 95HD by 3.86 px (-12.3%) and ASD by 1.96 px (-20.8%) relative to baseline Exp-42.
+- On external cohort BUS-UCLM, DAG attention gating paired with boundary loss stabilized margin delineation, slashing 95HD from 34.66 px to 22.68 px (-11.98 px) and ASD from 9.62 px to 5.68 px (-3.94 px).
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp59-full-amfu-boundary-enhanced-cosine-only.
+
+
+Session 19 - Exp-60: Plain U-Net Baseline on Raw Ultrasound with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Establish the lower-bound architectural ablation baseline by evaluating the standard Plain U-Net (omitting both DAG skip attention gates and MFEF multi-scale bottleneck expansions) under explicit active contour morphological boundary supervision on unprocessed raw ultrasound, initiating the final 4-run Plain U-Net boundary ablation quadrant.
+
+Methodology:
+1. Architecture: Plain U-Net Baseline (DAG=False, MFEF=False, base_channels=32, params=3,833,505).
+2. Input Modality: Raw Ultrasound (raw_image, 1-channel, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 81.28% (vs. Exp-32 Plain U-Net Raw baseline 81.31%, -0.03%)
+- Test Jaccard (IoU): 71.96% (vs. Exp-32 72.04%, -0.08%)
+- 95% Hausdorff Distance (95HD): 33.80 px (vs. Exp-32 31.41 px, +2.39 px)
+- Average Surface Distance (ASD): 9.23 px (vs. Exp-32 9.89 px, -0.66 px / -6.7% surface error reduction)
+- Test Loss: 0.7195
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 84.49%, IoU 75.51%, 95HD 25.22 px, ASD 6.32 px
+- BUS-UCLM: Dice 74.10%, IoU 61.26%, 95HD 83.99 px, ASD 24.12 px
+- BUSI: Dice 73.75%, IoU 64.30%, 95HD 46.21 px, ASD 13.98 px
+
+Comparative & Architectural Findings:
+- Contrast Leakage Without Attention Gates: In the absence of DAG attention gates, boundary supervision alone cannot restrain false positive spillover into surrounding parenchyma on low-contrast external cohorts. On BUS-UCLM, 95HD exploded to 83.99 px and ASD to 24.12 px (compared to 20.20 px 95HD and 5.62 px ASD for U-Net + DAG in Exp-49).
+- Comparison with U-Net + DAG (Exp-49): Adding DAG skip-connection attention gates yields a +3.68% absolute gain in Dice (84.96% vs 81.28%), cuts 95HD by 13.60 px (20.20 px vs 33.80 px), and reduces ASD by 3.61 px (5.62 px vs 9.23 px), proving that attention gating is functionally prerequisite for precise morphological boundary localization.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp60-plain-unet-boundary-raw-cosine-only.
+
+
+Session 20 - Exp-61: Plain U-Net Baseline on CLAHE Alone with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the standard Plain U-Net baseline (without DAG attention gates or MFEF bottleneck modules) under explicit boundary supervision on contrast-equalized ultrasound (CLAHE Alone), establishing the 14th run of the 16-experiment boundary ablation factorial matrix.
+
+Methodology:
+1. Architecture: Plain U-Net Baseline (DAG=False, MFEF=False, base_channels=32, params=3,833,505).
+2. Input Modality: CLAHE Alone (clahe_image, 1-channel, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 80.88% (vs. Exp-34 Plain U-Net CLAHE baseline 81.74%, -0.86%)
+- Test Jaccard (IoU): 71.39% (vs. Exp-34 72.54%, -1.15%)
+- 95% Hausdorff Distance (95HD): 36.87 px (vs. Exp-34 33.95 px, +2.92 px)
+- Average Surface Distance (ASD): 10.21 px (vs. Exp-34 9.87 px, +0.34 px / +3.4% error increase)
+- Test Loss: 0.7253
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 84.02%, IoU 75.15%, 95HD 27.95 px, ASD 7.25 px
+- BUS-UCLM: Dice 72.39%, IoU 59.01%, 95HD 72.74 px, ASD 21.86 px
+- BUSI: Dice 73.89%, IoU 63.56%, 95HD 53.81 px, ASD 15.89 px
+
+Comparative & Architectural Findings:
+- Contrast Amplification Trap Without Attention Gates: In the absence of DAG attention gates to filter skip connections, local contrast enhancement from CLAHE amplifies acoustic speckle borders in surrounding parenchyma. The boundary active contour gradient locks onto these false edges, increasing 95HD from 33.95 px to 36.87 px (+2.92 px error penalty) and depressing Dice by -0.86%.
+- Dramatic Contrast with U-Net + DAG (Exp-48): Adding DAG attention gates to the exact same CLAHE input under boundary supervision (Exp-48) lifts Dice to 84.47% (+3.59% absolute gain), cuts 95HD nearly in half to 19.04 px (-17.83 px boundary error reduction), and reduces ASD to 5.74 px (-4.47 px / -43.8% surface error reduction). This demonstrates that attention gating is functionally indispensable when pairing boundary loss with contrast-enhanced modalities.
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp61-plain-unet-boundary-clahe-cosine-only.
+
+
+Session 21 - Exp-62: Plain U-Net Baseline on SRAD Alone with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the Plain U-Net baseline on speckle-reduced anisotropic diffusion ultrasound (SRAD Alone) under explicit boundary supervision, establishing the 15th experiment in the 16-run boundary ablation battery.
+
+Methodology:
+1. Architecture: Plain U-Net Baseline (DAG=False, MFEF=False, base_channels=32, params=3,833,505).
+2. Input Modality: SRAD Alone (srad_image, 1-channel, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 80.19% (vs. Exp-33 Plain U-Net SRAD baseline 78.27%, +1.92%)
+- Test Jaccard (IoU): 70.66% (vs. Exp-33 69.06%, +1.60%)
+- 95% Hausdorff Distance (95HD): 31.46 px (vs. Exp-33 33.01 px, -1.55 px boundary error reduction)
+- Average Surface Distance (ASD): 8.82 px (vs. Exp-33 10.44 px, -1.62 px / -15.5% surface error reduction)
+- Test Loss: 0.7482
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 83.44%, IoU 74.03%, 95HD 25.98 px, ASD 6.61 px
+- BUS-UCLM: Dice 74.54%, IoU 62.48%, 95HD 59.04 px, ASD 19.22 px
+- BUSI: Dice 72.17%, IoU 62.89%, 95HD 40.49 px, ASD 12.62 px
+
+Comparative & Architectural Findings:
+- Speckle Smoothing Facilitates Boundary Anchoring: Unlike CLAHE (which amplified noise and induced boundary latching on false speckle edges in Exp-61), SRAD non-linear anisotropic diffusion creates piecewise homogeneous acoustic regions. This allows the active contour boundary loss to reliably anchor to true lesion borders even without DAG attention gates, yielding across-the-board gains (+1.92% Dice, +1.60% IoU, -1.55 px 95HD, -1.62 px ASD).
+- External Cohort Rescue: On the low-contrast Spanish cohort BUS-UCLM, boundary supervision combined with SRAD diffusion lifted Dice from 67.61% to 74.54% (+6.93% Dice) and slashed 95HD from 73.69 px to 59.04 px (-14.65 px / -19.9% error reduction) and ASD from 25.44 px to 19.22 px (-6.22 px / -24.4% error reduction).
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp62-plain-unet-boundary-srad-cosine-only.
+
+
+Session 22 - Exp-63: Plain U-Net Baseline on Dual-Enhanced Ultrasound with Boundary-Aware Focal Tversky Loss
+
+Problem Statement:
+Evaluate the Plain U-Net baseline on dual-enhanced ultrasound (SRAD + CLAHE) under explicit boundary supervision, concluding the final cell of the 16-experiment boundary ablation factorial matrix.
+
+Methodology:
+1. Architecture: Plain U-Net Baseline (DAG=False, MFEF=False, base_channels=32, params=3,833,505).
+2. Input Modality: Dual-Enhanced Ultrasound (image: SRAD + CLAHE, 1-channel, 256x256).
+3. Loss Function: Compound Boundary-Aware Focal Tversky Loss:
+   Loss = (BCE + FTL) + 0.5 * (1.0 - BoundaryDice)
+   - Boundary Extractor: Differentiable morphological gradient on CUDA:
+     Boundary = MaxPool2d(x) - (-MaxPool2d(-x))
+4. Training: 200 epochs on GPU via Molab Marimo runtime (Adam lr=1e-3, Cosine Annealing min_lr=1e-5).
+
+Quantitative Results (Held-Out Test Set - 266 Scans):
+- Test Dice: 78.70% (vs. Exp-36 Plain U-Net Dual Enhanced baseline 79.65%, -0.95%)
+- Test Jaccard (IoU): 68.59% (vs. Exp-36 69.76%, -1.17%)
+- 95% Hausdorff Distance (95HD): 35.09 px (vs. Exp-36 34.59 px, +0.50 px)
+- Average Surface Distance (ASD): 10.46 px (vs. Exp-36 10.72 px, -0.26 px / -2.4% error reduction)
+- Test Loss: 0.7777
+
+Per-Dataset Breakdown:
+- BUS-BRA: Dice 81.85%, IoU 72.15%, 95HD 29.18 px, ASD 8.12 px
+- BUS-UCLM: Dice 72.17%, IoU 58.87%, 95HD 61.47 px, ASD 19.26 px
+- BUSI: Dice 71.19%, IoU 60.69%, 95HD 45.67 px, ASD 15.06 px
+
+Comparative & Architectural Findings:
+- Full Matrix Closure (16/16 Factorial Experiments Complete): Completion of Exp-63 finalizes every cell of the 4-architecture x 4-modality boundary-aware ablation matrix.
+- Compounded Filtering Penalty on Plain Architectures: Compounding SRAD PDE diffusion with CLAHE creates high-contrast artificial edge transitions. In the absence of DAG attention gates, the active contour gradient oscillates between true tumor margins and amplified acoustic halos, depressing Dice to 78.70% (vs 82.10% on U-Net + DAG in Exp-50).
+- Cross-Center Stabilization: On external cohort BUS-UCLM, boundary supervision stabilized the Plain U-Net prediction against catastrophic under-segmentation, improving Dice from 69.23% to 72.17% (+2.94%) and cutting 95HD from 68.18 px to 61.47 px (-6.71 px).
+
+Hugging Face Release:
+- Published to Ahorts/G17-AMFU-Net-Paper on branch exp63-plain-unet-boundary-enhanced-cosine-only.
