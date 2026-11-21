@@ -54,6 +54,10 @@ def _():
 
     os.environ["HF_HUB_DISABLE_XET"] = "1"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
 
     return (
         Dataset,
@@ -144,6 +148,7 @@ def _(dataclass, mo):
     - **Input Image Modality:** `{active_modality_label}`
     - **DAG Attention Gates:** `{'ENABLED' if CFG.use_dag else 'DISABLED (Plain Skips)'}`
     - **MFEF Bottleneck:** `{'ENABLED' if CFG.use_mfef else 'DISABLED (Direct Pass)'}`
+    - **Loss Function:** `{f'Cold Boundary Focal Tversky (BCE + FTL + {CFG.boundary_weight} * BoundaryDice)' if CFG.loss_type == 'boundary_focal_tversky' else 'Focal Tversky (BCE + FTL)'}`
     - **LR Scheduler:** `{'Cosine Annealing (min_lr=1e-5)' if CFG.scheduler_type == 'cosine' else 'StepLR (0.5x / 10 epochs)'}`
     - **Dataset:** `{CFG.data_repo}`
     - **Precision:** `{CFG.precision}` | **Effective Batch:** `{CFG.batch_size * CFG.gradient_accumulation}`
@@ -362,6 +367,13 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             return x * weights
 
 
+    def extract_boundary(tensor):
+        """Differentiable morphological boundary extraction via dilation minus erosion."""
+        dilated = F.max_pool2d(tensor, kernel_size=3, stride=1, padding=1)
+        eroded = -F.max_pool2d(-tensor, kernel_size=3, stride=1, padding=1)
+        return dilated - eroded
+
+
     class AMFUConfig(PretrainedConfig):
         model_type = "amfu-net"
 
@@ -454,7 +466,10 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
             loss = None
 
             if labels is not None:
-                probabilities = torch.sigmoid(logits)
+                # Evaluate loss in fp32 so bf16/fp16 autocast never truncates Tversky/morphological epsilons
+                logits_f32 = logits.float()
+                labels_f32 = labels.float()
+                probabilities = torch.sigmoid(logits_f32)
                 dims = (1, 2, 3)
                 loss_type = getattr(self.config, "loss_type", "focal_tversky")
                 bce = F.binary_cross_entropy_with_logits(logits, labels)
@@ -483,12 +498,23 @@ def _(F, PreTrainedModel, PretrainedConfig, nn, torch):
 
 
 @app.cell
-def _(binary_erosion, distance_transform_edt, np):
+def _(CFG, binary_erosion, distance_transform_edt, math, np):
     def surface_distances(prediction: np.ndarray, target: np.ndarray):
-        pred_b = prediction ^ binary_erosion(prediction)
-        target_b = target ^ binary_erosion(target)
-        if not np.any(pred_b) or not np.any(target_b):
+        pred = np.asarray(prediction, dtype=bool)
+        tgt = np.asarray(target, dtype=bool)
+        if not np.any(pred) and not np.any(tgt):
             return 0.0, 0.0
+        if not np.any(pred) or not np.any(tgt):
+            diag = float(math.hypot(*tgt.shape))
+            return diag, diag
+
+        pred_b = pred ^ binary_erosion(pred, border_value=0)
+        target_b = tgt ^ binary_erosion(tgt, border_value=0)
+        if not np.any(pred_b):
+            pred_b = pred
+        if not np.any(target_b):
+            target_b = tgt
+
         dt_target = distance_transform_edt(~target_b)
         dt_pred = distance_transform_edt(~pred_b)
         d_p_to_t = dt_target[pred_b]
@@ -501,15 +527,28 @@ def _(binary_erosion, distance_transform_edt, np):
     def compute_metrics(eval_pred):
         predictions, labels = eval_pred
         probs = 1.0 / (1.0 + np.exp(-np.clip(predictions, -30, 30)))
-        preds = (probs >= 0.50).astype(bool)
-        labels_bool = (labels >= 0.50).astype(bool)
+        preds = (probs >= CFG.threshold)
+        labels_bool = (labels >= 0.50)
 
-        intersection = np.logical_and(preds, labels_bool).sum()
-        dice = (2.0 * intersection + 1e-7) / (preds.sum() + labels_bool.sum() + 1e-7)
-        union = np.logical_or(preds, labels_bool).sum()
-        jaccard = (intersection + 1e-7) / (union + 1e-7)
+        spatial_axes = tuple(range(1, preds.ndim))
+        tp = np.logical_and(preds, labels_bool).sum(axis=spatial_axes).astype(np.float64)
+        fp = np.logical_and(preds, ~labels_bool).sum(axis=spatial_axes).astype(np.float64)
+        fn = np.logical_and(~preds, labels_bool).sum(axis=spatial_axes).astype(np.float64)
+        eps = 1e-7
 
-        return {"dice": float(dice), "jaccard": float(jaccard)}
+        dice = (2.0 * tp + eps) / (2.0 * tp + fp + fn + eps)
+        jaccard = (tp + eps) / (tp + fp + fn + eps)
+        recall = (tp + eps) / (tp + fn + eps)
+        precision = np.where((tp + fp) > 0, tp / (tp + fp + eps), np.where(fn == 0, 1.0, 0.0))
+        empty_rate = (preds.sum(axis=spatial_axes) == 0).astype(np.float64)
+
+        return {
+            "dice": float(dice.mean()),
+            "jaccard": float(jaccard.mean()),
+            "recall": float(recall.mean()),
+            "precision": float(precision.mean()),
+            "empty_rate": float(empty_rate.mean()),
+        }
 
     return compute_metrics, surface_distances
 
@@ -535,6 +574,7 @@ def _(AMFUConfig, AMFUNet, CFG, SegmentationDataset, mo, paper_data):
 
     mo.md(
         f"Model initialized: DAG={CFG.use_dag}, MFEF={CFG.use_mfef}, "
+        f"Loss={getattr(model_config, 'loss_type', 'boundary_focal_tversky')} (bnd_weight={getattr(model_config, 'boundary_weight', 0.5)}), "
         f"Trainable parameters: {num_params:,}"
     )
 
@@ -692,13 +732,18 @@ def _(
                 eps = 1e-7
 
                 h_dist, a_dist = surface_distances(pred[0], label[0])
+                recall = (tp + eps) / (tp + fn + eps)
+                precision = (tp / (tp + fp + eps)) if (tp + fp) > 0 else (1.0 if fn == 0 else 0.0)
                 rows.append({
                     "image_id": row["image_id"],
                     "dataset": row["dataset"],
                     "dice": float((2 * tp + eps) / (2 * tp + fp + fn + eps)),
                     "jaccard": float((tp + eps) / (tp + fp + fn + eps)),
+                    "recall": float(recall),
+                    "precision": float(precision),
                     "hd95": h_dist,
                     "asd": a_dist,
+                    "empty_pred": int(pred.sum() == 0),
                 })
 
                 ds_dir = prediction_dir / row["dataset"]
@@ -713,22 +758,31 @@ def _(
     else:
         test_results = pd.read_csv(csv_path)
         test_loss = float(loss_path.read_text().strip()) if loss_path.exists() else 0.0
+        if "recall" not in test_results.columns:
+            test_results["recall"] = np.nan
+        if "precision" not in test_results.columns:
+            test_results["precision"] = np.nan
+        if "empty_pred" not in test_results.columns:
+            test_results["empty_pred"] = 0
 
-    overall_mean = test_results[["dice", "jaccard", "hd95", "asd"]].mean()
-    summary_table = test_results.groupby("dataset")[["dice", "jaccard", "hd95", "asd"]].agg(["mean", "std", "count"])
+    overall_mean = test_results[["dice", "jaccard", "recall", "precision", "hd95", "asd"]].mean()
+    empty_count = int(test_results["empty_pred"].sum())
+    summary_table = test_results.groupby("dataset")[["dice", "jaccard", "recall", "precision", "hd95", "asd"]].agg(["mean", "std", "count"])
     summary_table.columns = ["_".join(c).strip() for c in summary_table.columns]
 
     mo.vstack([
         mo.md(f"""
     ### Evaluation Results: `{run_slug}`
     - **DAG:** `{'ENABLED' if CFG.use_dag else 'DISABLED'}` | **MFEF:** `{'ENABLED' if CFG.use_mfef else 'DISABLED'}`
-    - **Test Scans:** `{len(test_results)}`
+    - **Test Scans:** `{len(test_results)}` | **Empty Preds:** `{empty_count}`
 
     | Metric | Current Run (Mean) | Paper Baseline | Delta vs Baseline |
     | :--- | :--- | :--- | :--- |
     | **Loss** | `{test_loss:.4f}` | `0.3496` | **{test_loss - 0.3496:+.4f}** |
     | **Dice** | `{overall_mean['dice']:.4f}` ({overall_mean['dice']*100:.2f}%) | `0.7909` (79.09%) | **{(overall_mean['dice'] - 0.7909)*100:+.2f}%** |
     | **Jaccard** | `{overall_mean['jaccard']:.4f}` ({overall_mean['jaccard']*100:.2f}%) | `0.6967` (69.67%) | **{(overall_mean['jaccard'] - 0.6967)*100:+.2f}%** |
+    | **Recall** | `{overall_mean['recall']*100:.2f}%` | `—` | `—` |
+    | **Precision** | `{overall_mean['precision']*100:.2f}%` | `—` | `—` |
     | **95HD** | `{overall_mean['hd95']:.4f}` px | `30.0976` px | **{overall_mean['hd95'] - 30.0976:+.4f}** |
     | **ASD** | `{overall_mean['asd']:.4f}` px | `9.8865` px | **{overall_mean['asd'] - 9.8865:+.4f}** |
     """),
