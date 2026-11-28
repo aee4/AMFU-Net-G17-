@@ -18,6 +18,10 @@ Public breast ultrasound image -> SRAD despeckling -> CLAHE enhancement -> AMFU-
 
 The segmentation architecture remains based on AMFU-Net, while the unavailable fusion stage is replaced with a documented single-image enhancement pipeline.
 
+## November 2026 update
+
+The final model no longer uses SRAD + CLAHE or AMFU-Net. It is a U-Net++ with an ImageNet ResNet-34 encoder on raw scans: 89.36% Dice vs 82.76% for Exp-25 on the same 266 test scans. The notebooks for every step are in [`experiments/2026-11-unetpp/`](experiments/2026-11-unetpp/).
+
 ## Repository Structure
 
 ```text
